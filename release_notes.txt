@@ -1,0 +1,2 @@
+v1.1pre:
+  * Added wo_monitor function to WebAPI.  This is used to monitor the currently running work order.

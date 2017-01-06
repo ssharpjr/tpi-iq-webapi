@@ -1,0 +1,19 @@
+IQORA =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+        (ADDRESS = (PROTOCOL = TCP)(HOST = TPI-DBSVR01)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+        (SERVICE_NAME = IQMS)
+    )
+  )
+
+IQTEST =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+        (ADDRESS = (PROTOCOL = TCP)(HOST = TPI-DBSVR02)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+        (SERVICE_NAME = IQMS)
+    )
+  )
