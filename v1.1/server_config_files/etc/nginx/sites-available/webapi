@@ -1,0 +1,11 @@
+# uWSGI
+server {
+    listen 80;
+    server_name 10.130.0.42;
+
+    location / {
+        include uwsgi_params;
+        uwsgi_pass unix:/home/ssharp/webapi/webapi.sock;
+    }
+}
+
