@@ -11,8 +11,6 @@ app.config.from_object(config)
 # app.config['SQLALCHEMY_ECHO'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app)
-
-
 #####################################################################
 
 
@@ -21,6 +19,13 @@ class Arinvt(db.Model):
     id = db.Column(NUMBER, primary_key=True)
     itemno = db.Column(CHAR)
     descrip = db.Column(CHAR)
+
+
+# class Arinvt_Rmat(db.Model):
+#     __tablename__ = 'arinvt'
+#     id = db.Column(NUMBER, primary_key=True)
+#     itemno = db.Column(CHAR)
+#     descrip = db.Column(CHAR)
 
 
 class V_RT_Workorders(db.Model):
@@ -53,6 +58,7 @@ class V_Sched(db.Model):
     __tablename__ = 'v_sched'
     work_center_id = db.Column(NUMBER, primary_key=True)
     workorder_id = db.Column(NUMBER)
+    standard_id = db.Column(NUMBER)
 
 
 #####################################################################
@@ -71,6 +77,29 @@ def work_order(wo_id):
         itemno = res.Arinvt.itemno.rstrip()
         return jsonify({'press': eqno,
                         'rmat': itemno})
+    except:
+        return abort(404)
+
+
+@app.route('/press/<int:press_id>', methods=['GET'])
+def press(press_id):
+    res = db.session.query(V_Sched, Arinvt, Work_Center).\
+          filter(Work_Center.id == V_Sched.work_center_id).\
+          filter(V_Sched.standard_id == Standard.id).\
+          filter(Standard.arinvt_id_mat == Arinvt.id).\
+          first() or abort(404)
+
+    try:
+        eqno = res.Work_Center.eqno.rstrip()
+        wo_id = res.V_Sched.work_center_id.rstrip()
+        itemno = res.Arinvt.itemno.rstrip()
+        descrip = res.Arinvt.descrip.rstrip()
+        itemno_mat = res.Arinvt_Rmat.itemno.rstrip()
+        return jsonify({'press': eqno,
+                        'wo_id': wo_id,
+                        'itemno': itemno,
+                        'descrip': descrip,
+                        'itemno_mat': itemno_mat})
     except:
         return abort(404)
 
@@ -107,4 +136,4 @@ def not_found(error):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='10.130.2.90')
+    app.run(debug=True)
