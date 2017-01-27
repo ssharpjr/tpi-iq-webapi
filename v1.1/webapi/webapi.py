@@ -3,14 +3,16 @@
 
 from flask import Flask, abort, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import aliased
 from sqlalchemy.dialects.oracle import CHAR, NUMBER, VARCHAR2
 from config import config
 
 app = Flask(__name__)
 app.config.from_object(config)
-# app.config['SQLALCHEMY_ECHO'] = True
+app.config['SQLALCHEMY_ECHO'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app)
+
 #####################################################################
 
 
@@ -19,13 +21,7 @@ class Arinvt(db.Model):
     id = db.Column(NUMBER, primary_key=True)
     itemno = db.Column(CHAR)
     descrip = db.Column(CHAR)
-
-
-# class Arinvt_Rmat(db.Model):
-#     __tablename__ = 'arinvt'
-#     id = db.Column(NUMBER, primary_key=True)
-#     itemno = db.Column(CHAR)
-#     descrip = db.Column(CHAR)
+    standard_id = db.Column(NUMBER, db.ForeignKey('standard.id'))
 
 
 class V_RT_Workorders(db.Model):
@@ -67,55 +63,41 @@ class V_Sched(db.Model):
 @app.route('/wo/<int:wo_id>', methods=['GET'])
 def work_order(wo_id):
     res = db.session.query(V_RT_Workorders, Arinvt).\
-          filter(V_RT_Workorders.standard_id == Standard.id).\
-          filter(Standard.arinvt_id_mat == Arinvt.id).\
-          filter(V_RT_Workorders.workorder_id == wo_id).\
-          first() or abort(404)
+            filter(V_RT_Workorders.standard_id == Standard.id).\
+            filter(Standard.arinvt_id_mat == Arinvt.id).\
+            filter(V_RT_Workorders.workorder_id == wo_id).\
+            first() or abort(404)
 
-    try:
-        eqno = res.V_RT_Workorders.eqno.rstrip()
-        itemno = res.Arinvt.itemno.rstrip()
-        return jsonify({'press': eqno,
-                        'rmat': itemno})
-    except:
-        return abort(404)
-
+    eqno = res.V_RT_Workorders.eqno.rstrip()
+    itemno = res.Arinvt.itemno.rstrip()
+    return jsonify({'press': eqno,
+                    'rmat': itemno})
 
 @app.route('/press/<int:press_id>', methods=['GET'])
 def press(press_id):
-    res = db.session.query(V_Sched, Arinvt, Work_Center).\
-          filter(Work_Center.id == V_Sched.work_center_id).\
-          filter(V_Sched.standard_id == Standard.id).\
-          filter(Standard.arinvt_id_mat == Arinvt.id).\
+    res = db.session.query(V_RT_Workorders, Arinvt).\
+            filter(V_RT_Workorders.standard_id == Standard.id).\
+            filter(Standard.id == Arinvt.standard_id).\
+            filter(V_RT_Workorders.eqno == str(press_id)).\
+          first() or abort(404)
+    res2 = db.session.query(V_RT_Workorders, Arinvt).\
+            filter(V_RT_Workorders.standard_id == Standard.id).\
+            filter(Standard.arinvt_id_mat == Arinvt.id).\
+            filter(V_RT_Workorders.eqno == str(press_id)).\
           first() or abort(404)
 
-    try:
-        eqno = res.Work_Center.eqno.rstrip()
-        wo_id = res.V_Sched.work_center_id.rstrip()
-        itemno = res.Arinvt.itemno.rstrip()
-        descrip = res.Arinvt.descrip.rstrip()
-        itemno_mat = res.Arinvt_Rmat.itemno.rstrip()
-        return jsonify({'press': eqno,
-                        'wo_id': wo_id,
-                        'itemno': itemno,
-                        'descrip': descrip,
-                        'itemno_mat': itemno_mat})
-    except:
-        return abort(404)
-
-
-@app.route('/wo_monitor/<int:wo_id>', methods=['GET'])
-def wo_monitor(wo_id):
-    res = db.session.query(Work_Center, V_Sched).\
-          filter(V_Sched.work_center_id == Work_Center.id).\
-          filter(V_Sched.workorder_id == wo_id).\
-          first() or abort(404)
-    try:
-        eqno = res.Work_Center.eqno.rstrip()
-        return jsonify({'press': eqno,
-                        'wo_id': wo_id})
-    except:
-        return abort(404)
+    eqno = res.V_RT_Workorders.eqno.rstrip()
+    wo_id = str(int(res.V_RT_Workorders.workorder_id))
+    itemno = res.Arinvt.itemno.rstrip()
+    descrip = res.Arinvt.descrip.rstrip()
+    itemno_mat = res2.Arinvt.itemno.rstrip()
+    descrip_mat = res2.Arinvt.descrip.rstrip()
+    return jsonify({'press': eqno,
+                    'wo_id': wo_id,
+                    'itemno': itemno,
+                    'descrip': descrip,
+                    'itemno_mat': itemno_mat,
+                    'descrip_mat': descrip_mat})
 
 
 @app.route('/serial/<sn>', methods=['GET'])
@@ -123,11 +105,8 @@ def serial_number(sn):
     res = db.session.query(Master_Label).\
         filter(Master_Label.serial == sn).\
         first() or abort(404)
-    try:
-        itemno = res.itemno.rstrip()
-        return jsonify({'itemno': itemno})
-    except:
-        return abort(404)
+    itemno = res.itemno.rstrip()
+    return jsonify({'itemno': itemno})
 
 
 @app.errorhandler(404)
