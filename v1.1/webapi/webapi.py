@@ -86,13 +86,13 @@ def press(press_id):
             filter(V_RT_Workorders.eqno == str(press_id)).\
           first() or abort(404)
 
-    eqno = res.V_RT_Workorders.eqno.rstrip()
+    press_id = res.V_RT_Workorders.eqno.rstrip()
     wo_id = str(int(res.V_RT_Workorders.workorder_id))
     itemno = res.Arinvt.itemno.rstrip()
     descrip = res.Arinvt.descrip.rstrip()
     itemno_mat = res2.Arinvt.itemno.rstrip()
     descrip_mat = res2.Arinvt.descrip.rstrip()
-    return jsonify({'press': eqno,
+    return jsonify({'press_id': press_id,
                     'wo_id': wo_id,
                     'itemno': itemno,
                     'descrip': descrip,
